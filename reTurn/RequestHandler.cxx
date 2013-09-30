@@ -231,6 +231,43 @@ RequestHandler::checkNonce(const Data& nonce)
 }
 
 bool 
+RequestHandler::handleAuthenticationWithMI(StunMessage& request, StunMessage& response)
+{
+    StackLog(<< "Validating username: " << *request.mUsername);  // Note: we ensure username is present above
+
+    // !slg! need to determine whether the USERNAME contains a known entity, and is known
+    //       within the realm of the REALM attribute of the request
+    if (!getConfig().isUserNameValid(*request.mUsername, *request.mRealm))
+    {
+       WarningLog(<< "Invalid username: " << *request.mUsername << ". Sending 401. Sender=" << request.mRemoteTuple);
+       buildErrorResponse(response, 401, "Unauthorized", getConfig().mAuthenticationRealm.c_str());
+       return false;
+    }
+
+    StackLog(<< "Validating MessageIntegrity");
+
+    // Need to calculate HMAC across entire message - for LongTermAuthentication we use
+    // username:realm:password string as the key
+    Data hmacKey;
+    assert(request.mHasUsername);  // Note:  This is checked above
+
+    request.calculateHmacKey(hmacKey, getConfig().getPasswordForUsername(*request.mUsername, *request.mRealm));
+
+    if(!request.checkMessageIntegrity(hmacKey))
+    {
+       WarningLog(<< "MessageIntegrity is bad. Sending 401. Sender=" << request.mRemoteTuple);
+       buildErrorResponse(response, 401, "Unauthorized", getConfig().mAuthenticationRealm.c_str());
+       return false;
+    }
+
+    // need to compute this later after message is filled in
+    response.mHasMessageIntegrity = true;
+    response.mHmacKey = hmacKey;  // Used to later calculate Message Integrity during encoding
+
+    return true;
+}
+
+bool
 RequestHandler::handleAuthentication(StunMessage& request, StunMessage& response)
 {
    // Don't authenticate shared secret requests, Binding Requests or Indications (if LongTermCredentials are used)
@@ -247,78 +284,45 @@ RequestHandler::handleAuthentication(StunMessage& request, StunMessage& response
       buildErrorResponse(response, 401, "Unauthorized (no MessageIntegrity)", getConfig().mAuthenticationRealm.c_str());  
       return false;
    }
-   else
+
+   if (!request.mHasUsername)
    {
-      if (!request.mHasUsername)
-      {
-         WarningLog(<< "No Username and contains MessageIntegrity. Sending 400. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 400, "Bad Request (no Username and contains MessageIntegrity)");
-         return false;
-      }
-
-      if(!request.mHasRealm)
-      {
-         WarningLog(<< "No Realm.  Sending 400. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 400, "Bad Request (No Realm)");
-         return false;
-      }
-      if(!request.mHasNonce)
-      {
-         WarningLog(<< "No Nonce and contains realm.  Sending 400. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 400, "Bad Request (No Nonce and contains Realm)");
-         return false;
-      }
-      switch(checkNonce(*request.mNonce))
-      {
-      case Valid:
-         // Do nothing
-         break;
-      case Expired:
-         WarningLog(<< "Nonce expired. Sending 438. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 438, "Stale Nonce", getConfig().mAuthenticationRealm.c_str());
-         return false;
-         break;
-      case NotValid:
-      default:
-         WarningLog(<< "Invalid Nonce. Sending 400. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 400, "BadRequest (Invalid Nonce)");
-         return false;
-         break;
-      }
-
-      StackLog(<< "Validating username: " << *request.mUsername);  // Note: we ensure username is present above
-
-      // !slg! need to determine whether the USERNAME contains a known entity, and is known 
-      //       within the realm of the REALM attribute of the request
-      if (!getConfig().isUserNameValid(*request.mUsername, *request.mRealm))
-      {
-         WarningLog(<< "Invalid username: " << *request.mUsername << ". Sending 401. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 401, "Unauthorized", getConfig().mAuthenticationRealm.c_str());
-         return false;
-      }
-
-      StackLog(<< "Validating MessageIntegrity");
-
-      // Need to calculate HMAC across entire message - for LongTermAuthentication we use 
-      // username:realm:password string as the key
-      Data hmacKey;
-      assert(request.mHasUsername);  // Note:  This is checked above
-
-      request.calculateHmacKey(hmacKey, getConfig().getPasswordForUsername(*request.mUsername, *request.mRealm));
-
-      if(!request.checkMessageIntegrity(hmacKey))
-      {
-         WarningLog(<< "MessageIntegrity is bad. Sending 401. Sender=" << request.mRemoteTuple);
-         buildErrorResponse(response, 401, "Unauthorized", getConfig().mAuthenticationRealm.c_str());
-         return false;
-      }
-
-      // need to compute this later after message is filled in
-      response.mHasMessageIntegrity = true;
-      response.mHmacKey = hmacKey;  // Used to later calculate Message Integrity during encoding
+      WarningLog(<< "No Username and contains MessageIntegrity. Sending 400. Sender=" << request.mRemoteTuple);
+      buildErrorResponse(response, 400, "Bad Request (no Username and contains MessageIntegrity)");
+      return false;
    }
 
-   return true;
+   if(!request.mHasRealm)
+   {
+      WarningLog(<< "No Realm.  Sending 400. Sender=" << request.mRemoteTuple);
+      buildErrorResponse(response, 400, "Bad Request (No Realm)");
+      return false;
+   }
+   if(!request.mHasNonce)
+   {
+      WarningLog(<< "No Nonce and contains realm.  Sending 400. Sender=" << request.mRemoteTuple);
+      buildErrorResponse(response, 400, "Bad Request (No Nonce and contains Realm)");
+      return false;
+   }
+   switch(checkNonce(*request.mNonce))
+   {
+   case Valid:
+      // Do nothing
+      break;
+   case Expired:
+      WarningLog(<< "Nonce expired. Sending 438. Sender=" << request.mRemoteTuple);
+      buildErrorResponse(response, 438, "Stale Nonce", getConfig().mAuthenticationRealm.c_str());
+      return false;
+      break;
+   case NotValid:
+   default:
+      WarningLog(<< "Invalid Nonce. Sending 400. Sender=" << request.mRemoteTuple);
+      buildErrorResponse(response, 400, "BadRequest (Invalid Nonce)");
+      return false;
+      break;
+   }
+
+   return handleAuthenticationWithMI(request, response);
 }
 
 RequestHandler::ProcessResult 

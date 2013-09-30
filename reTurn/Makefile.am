@@ -16,7 +16,7 @@ SUBDIRS += client
 SUBDIRS += test
 
 #AM_CXXFLAGS = -DUSE_ARES
-AM_CXXFLAGS = -I $(top_srcdir)
+AM_CXXFLAGS = -I $(top_srcdir) -I $(top_srcdir)/libuauth/include 
 
 sbin_PROGRAMS = reTurnServer
 reTurnServer_SOURCES = reTurnServer.cxx \
@@ -45,6 +45,7 @@ reTurnServer_SOURCES = reTurnServer.cxx \
         TurnPermission.cxx \
         UdpRelayServer.cxx \
         UdpServer.cxx \
+        UnRequestHandler.cxx \
 	UserAuthData.cxx
 
 reTurnincludedir = $(includedir)/reTurn
@@ -74,6 +75,7 @@ nobase_reTurninclude_HEADERS = AsyncSocketBaseHandler.hxx \
 	TurnPermission.hxx \
 	UdpRelayServer.hxx \
 	UdpServer.hxx \
+	UnRequestHandler.hxx \
 	UserAuthData.hxx \
 	reTurnServer.hxx
 
@@ -83,6 +85,9 @@ reTurnServer_LDADD = ../rutil/librutil.la
 #reTurnServer_LDADD += -L../contrib/ares -lares
 reTurnServer_LDADD += @LIBSTL_LIBADD@
 reTurnServer_LDADD += @LIBSSL_LIBADD@ -lcrypto @LIBPTHREAD_LIBADD@
+
+reTurnServer_LDADD += ../libuauth/build/libuauth.a -lei -lcrypto 
+
 
 #lib_LTLIBRARIES = librepro.la
 

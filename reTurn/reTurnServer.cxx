@@ -11,8 +11,9 @@
 #include "TlsServer.hxx"
 #include "UdpServer.hxx"
 #include "ReTurnConfig.hxx"
-#include "RequestHandler.hxx"
+#include "UnRequestHandler.hxx"
 #include "TurnManager.hxx"
+#include <rutil/SharedPtr.hxx>
 #include <rutil/WinLeakCheck.hxx>
 #include <rutil/Log.hxx>
 #include <rutil/Logger.hxx>
@@ -103,16 +104,29 @@ reTurn::ReTurnServerProcess::main(int argc, char* argv[])
       boost::shared_ptr<reTurn::TlsServer> tlsV6TurnServer;
 #endif
 
-      // The one and only RequestHandler - if altStunPort is non-zero, then assume RFC3489 support is enabled and pass settings to request handler
-      reTurn::RequestHandler requestHandler(turnManager, 
-         reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnAddress : 0, 
-         reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnPort : 0, 
-         reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunAddress : 0, 
-         reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunPort : 0); 
+      resip::SharedPtr<reTurn::RequestHandler> requestHandler;
+      if (reTurnConfig.mAuthMethod == "unison")
+      {
+		  // The one and only RequestHandler - if altStunPort is non-zero, then assume RFC3489 support is enabled and pass settings to request handler
+    	  requestHandler.reset(new reTurn::UnRequestHandler(turnManager, "/home/dzhukov/unison/resiprocate/libuauth/test/id_rsa.pub.pem.example",
+			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnAddress : 0,
+			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnPort : 0,
+			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunAddress : 0,
+			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunPort : 0));
+      }
+      else if (reTurnConfig.mAuthMethod == "long-term")
+      {
+          // The one and only RequestHandler - if altStunPort is non-zero, then assume RFC3489 support is enabled and pass settings to request handler
+    	  requestHandler.reset(new reTurn::RequestHandler(turnManager,
+             reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnAddress : 0,
+             reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnPort : 0,
+             reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunAddress : 0,
+             reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunPort : 0));
+      }
 
-      udpTurnServer.reset(new reTurn::UdpServer(ioService, requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mTurnPort));
-      tcpTurnServer.reset(new reTurn::TcpServer(ioService, requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mTurnPort));
-      tlsTurnServer.reset(new reTurn::TlsServer(ioService, requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mTlsTurnPort));
+      udpTurnServer.reset(new reTurn::UdpServer(ioService, *requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mTurnPort));
+      tcpTurnServer.reset(new reTurn::TcpServer(ioService, *requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mTurnPort));
+      tlsTurnServer.reset(new reTurn::TlsServer(ioService, *requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mTlsTurnPort));
 
 #ifdef USE_IPV6
       udpV6TurnServer.reset(new reTurn::UdpServer(ioService, requestHandler, reTurnConfig.mTurnV6Address, reTurnConfig.mTurnPort));
@@ -122,9 +136,9 @@ reTurn::ReTurnServerProcess::main(int argc, char* argv[])
 
       if(reTurnConfig.mAltStunPort != 0) // if alt stun port is non-zero, then RFC3489 support is enabled
       {
-         a1p2StunUdpServer.reset(new reTurn::UdpServer(ioService, requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mAltStunPort));
-         a2p1StunUdpServer.reset(new reTurn::UdpServer(ioService, requestHandler, reTurnConfig.mAltStunAddress, reTurnConfig.mTurnPort));
-         a2p2StunUdpServer.reset(new reTurn::UdpServer(ioService, requestHandler, reTurnConfig.mAltStunAddress, reTurnConfig.mAltStunPort));
+         a1p2StunUdpServer.reset(new reTurn::UdpServer(ioService, *requestHandler, reTurnConfig.mTurnAddress, reTurnConfig.mAltStunPort));
+         a2p1StunUdpServer.reset(new reTurn::UdpServer(ioService, *requestHandler, reTurnConfig.mAltStunAddress, reTurnConfig.mTurnPort));
+         a2p2StunUdpServer.reset(new reTurn::UdpServer(ioService, *requestHandler, reTurnConfig.mAltStunAddress, reTurnConfig.mAltStunPort));
          udpTurnServer->setAlternateUdpServers(a1p2StunUdpServer.get(), a2p1StunUdpServer.get(), a2p2StunUdpServer.get());
          a1p2StunUdpServer->setAlternateUdpServers(udpTurnServer.get(), a2p2StunUdpServer.get(), a2p1StunUdpServer.get());
          a2p1StunUdpServer->setAlternateUdpServers(a2p2StunUdpServer.get(), udpTurnServer.get(), a1p2StunUdpServer.get());

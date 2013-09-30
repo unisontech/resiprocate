@@ -75,6 +75,9 @@ public:
    resip::Data mRunAsUser;
    resip::Data mRunAsGroup;
 
+   resip::Data mAuthMethod;
+   resip::Data mUnisonPublicKeyPath;
+
    bool isUserNameValid(const resip::Data& username,  const resip::Data& realm) const;
    const resip::Data& getPasswordForUsername(const resip::Data& username, const resip::Data& realm) const;
    const UserAuthData* getUser(const resip::Data& userName, const resip::Data& realm) const;

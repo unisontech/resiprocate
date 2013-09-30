@@ -40,7 +40,9 @@ ReTurnConfig::ReTurnConfig() :
    mDaemonize(false),
    mPidFile(""),
    mRunAsUser(""),
-   mRunAsGroup("")
+   mRunAsGroup(""),
+   mAuthMethod("long-term"),
+   mUnisonPublicKeyPath("")
 {
 }
 
@@ -73,6 +75,31 @@ void ReTurnConfig::parseConfig(int argc, char** argv, const resip::Data& default
    mRunAsUser = getConfigData("RunAsUser", mRunAsUser);
    mRunAsGroup = getConfigData("RunAsGroup", mRunAsGroup);
 
+   mAuthMethod = getConfigData("AuthMethod", mAuthMethod);
+   if (mAuthMethod == "unison")
+   {
+	   mUnisonPublicKeyPath = getConfigData("UnisonPublicKeyPath", mUnisonPublicKeyPath);
+	   if (mUnisonPublicKeyPath.size() == 0)
+	   {
+		   throw ConfigParse::Exception("UnisonAuth is enabled while UnisonPublicKeyPath is not set", __FILE__, __LINE__);
+	   }
+   }
+   else if (mAuthMethod == "long-term")
+   {
+	   // LongTermCredentials
+	   Data usersDatabase(getConfigData("UserDatabaseFile", ""));
+	   if(usersDatabase.size() == 0)
+	   {
+	      throw ConfigParse::Exception("Missing user database option! Expected \"UserDatabaseFile = file location\".", __FILE__, __LINE__);
+	   }
+	   AddBasePathIfRequired(usersDatabase);
+	   authParse(usersDatabase);
+   }
+   else
+   {
+	  throw ConfigParse::Exception("AuthMethod is not supported", __FILE__, __LINE__);
+   }
+
    // fork is not possible on Windows
 #ifdef WIN32
    if(mDaemonize)
@@ -83,20 +110,9 @@ void ReTurnConfig::parseConfig(int argc, char** argv, const resip::Data& default
 
    // TODO: For ShortTermCredentials use mAuthenticationCredentials[username] = password;
 
-
-   // LongTermCredentials
-   Data usersDatabase(getConfigData("UserDatabaseFile", ""));
-   if(usersDatabase.size() == 0)
-   {
-      throw ConfigParse::Exception("Missing user database option! Expected \"UserDatabaseFile = file location\".", __FILE__, __LINE__);
-   }
-
    AddBasePathIfRequired(mLoggingFilename);
    AddBasePathIfRequired(mTlsServerCertificateFilename);
    AddBasePathIfRequired(mTlsTempDhFilename);
-   AddBasePathIfRequired(usersDatabase);
-   
-   authParse(usersDatabase);
 }
 
 ReTurnConfig::~ReTurnConfig()

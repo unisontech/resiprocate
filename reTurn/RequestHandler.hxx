@@ -22,6 +22,8 @@ public:
                            const asio::ip::address* prim3489Address = 0, unsigned short* prim3489Port = 0,
                            const asio::ip::address* alt3489Address = 0, unsigned short* alt3489Port = 0);
 
+   virtual ~RequestHandler() {}
+
    typedef enum
    {
       NoResponseToSend,
@@ -37,6 +39,11 @@ public:
    void processTurnData(TurnAllocationManager& turnAllocationManager, unsigned short channelNumber, const StunTuple& localTuple, const StunTuple& remoteTuple, boost::shared_ptr<DataBuffer>& data);
 
    const ReTurnConfig& getConfig() { return mTurnManager.getConfig(); }
+
+protected:
+
+   virtual bool handleAuthenticationWithMI(StunMessage& request, StunMessage& response);
+   void buildErrorResponse(StunMessage& response, unsigned short errorCode, const char* msg, const char* realm = 0);
 
 private:
 
@@ -66,7 +73,6 @@ private:
    void processTurnSendIndication(TurnAllocationManager& turnAllocationManager, StunMessage& request);
 
    // Utility methods
-   void buildErrorResponse(StunMessage& response, unsigned short errorCode, const char* msg, const char* realm = 0);
    void generateNonce(const resip::Data& timestamp, resip::Data& nonce);
    enum CheckNonceResult { Valid, NotValid, Expired };
    CheckNonceResult checkNonce(const resip::Data& nonce);
