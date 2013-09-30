@@ -1,0 +1,3 @@
+[submodule "libuauth"]
+	path = libuauth
+	url = git@github.com:unisontech/libuauth.git
