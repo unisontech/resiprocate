@@ -1,0 +1,124 @@
+#!/bin/sh
+#
+# asterisk      start the asterisk PBX
+# (c) Mark Purcell <msp@debian.org>
+# (c) Tzafrir Cohen <tzafrir.cohen@xorcom.com>
+# (c) Faidon Liambotis <paravoid@debian.org>
+#
+#   This package is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+### BEGIN INIT INFO
+# Provides:          asterisk
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      $syslog $network $named mysql postgresql dahdi
+# Should-Stop:       $syslog $network $named mysql postgresql
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Asterisk PBX
+# Description:       Controls the Asterisk PBX
+### END INIT INFO
+
+
+RUNNER_SCRIPT_DIR=$(cd ${0%/*} && pwd -P)
+SCRIPT=`basename $0`
+
+RUNNER_BASE_DIR=${RUNNER_SCRIPT_DIR%/*}
+RUNNER_BASE_DIR=${RUNNER_BASE_DIR%/*}
+
+if [ -f "$RUNNER_BASE_DIR/CHEF.env" ]; then
+  . "$RUNNER_BASE_DIR/CHEF.env"
+fi
+
+# set default values, could be changed from calee side
+: ${RUNNER_USER:=`whoami`}
+: ${RUNNER_ETC_DIR:=$RUNNER_BASE_DIR/etc}
+: ${RUNNER_LOG_DIR:=$RUNNER_BASE_DIR/log}
+
+ 
+BASE_PATH=$RUNNER_BASE_DIR
+NAME=reTurnServer
+USER=$RUNNER_USER
+GROUP=$RUNNER_USER
+DAEMON=$BASE_PATH/sbin/$NAME
+DESC="resiprocate reTurn server"
+PIDFILE="$BASE_PATH/var/run/reTurnServer.pid"
+PIDFILE_DIR=`/usr/bin/dirname $PIDFILE`
+UMASK=007 # by default
+#MAXFILES=1024 # (the system default)
+
+. /lib/lsb/init-functions
+
+# by default: use real-time priority
+CONFIG_FILE="$BASE_PATH/etc/reTurnServer.config"
+PARAMS=""
+CHDIR_PARM=""
+
+if [ -r $BASE_PATH/etc/default/$NAME ]; then 
+  . $BASE_PATH/etc/default/$NAME
+fi
+
+if [ "x$USER" = "x" ]; then
+  echo "Error: empty USER name"
+  exit 1
+fi
+if [ `/usr/bin/id -u "$USER"` = 0 ]; then
+  echo "Starting as root not supported."
+  exit 1
+fi
+
+if [ "$UMASK" != '' ]; then
+  umask $UMASK
+fi
+
+DAEMON_OPTS="${CONFIG_FILE} --Daemonize=true --PidFile=${PIDFILE}"
+
+if [ ! -d "$PIDFILE_DIR" ]; then
+  /bin/mkdir -p "$PIDFILE_DIR"
+  /bin/chown $USER:$GROUP "$PIDFILE_DIR"
+fi
+
+set -e
+
+case "$1" in
+  start)
+    echo -n "Starting $DESC: "
+    /sbin/start-stop-daemon --start --quiet --chuid $USER:$GROUP --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
+    echo "$NAME."
+    ;;
+  stop)
+    echo -n "Stopping $DESC: "
+    /sbin/start-stop-daemon --stop --quiet --oknodo --user $USER --pidfile $PIDFILE --exec $DAEMON
+    echo "$NAME."
+    ;;
+  status)
+    echo -n "Status $DESC: "
+    PID=$(/bin/cat $PIDFILE)
+    /bin/kill -0 $PID
+    rc=$?
+    # Check exit code
+    if [ "$rc" -ne 0 ]; then
+      echo "$NAME is NOT running."
+      exit 7
+    else
+      echo "$NAME is running with PID: $PID"
+    fi
+    ;;
+  restart|force-reload)
+    echo -n "Restarting $DESC: "
+    /sbin/start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON
+    /bin/sleep 1
+    /sbin/start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
+    echo "$NAME."
+    ;;
+  *)
+    N=$BASE_PATH/etc/init.d/$NAME
+    echo "Usage: $N {start|stop|status|restart|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
