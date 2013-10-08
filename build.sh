@@ -22,3 +22,4 @@ autoreconf --install || error
 make -j5 || error
 make install || error
 chrpath -r \$ORIGIN/../lib $2/sbin/reTurnServer || error
+cp ./libuauth/build/libuauth.so $2/lib/ || error

@@ -86,7 +86,7 @@ reTurnServer_LDADD = ../rutil/librutil.la
 reTurnServer_LDADD += @LIBSTL_LIBADD@
 reTurnServer_LDADD += @LIBSSL_LIBADD@ -lcrypto @LIBPTHREAD_LIBADD@
 
-reTurnServer_LDADD += ../libuauth/build/libuauth.a -lei -lcrypto 
+reTurnServer_LDADD += ../libuauth/build/libuauth.so
 
 
 #lib_LTLIBRARIES = librepro.la
