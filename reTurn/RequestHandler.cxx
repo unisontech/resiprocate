@@ -621,6 +621,13 @@ RequestHandler::processTurnAllocateRequest(AsyncSocketBase* turnSocket, TurnAllo
    response.mHasTurnXorRelayedAddress = true;
    StunMessage::setStunAtrAddressFromTuple(response.mTurnXorRelayedAddress, allocation->getRequestedTuple());
 
+   // If we have ExternalTurnAddress set in config override the address
+   if (getConfig().mExternalTurnAddressEnabled)
+   {
+      response.mTurnXorRelayedAddress.family = StunMessage::IPv4Family;
+      response.mTurnXorRelayedAddress.addr.ipv4 = getConfig().mExternalTurnAddress.to_v4().to_ulong();
+   }
+
    // Note:  XorMappedAddress is added to all TurnAllocate responses in processStunMessage
   
    //Reserved for future draft

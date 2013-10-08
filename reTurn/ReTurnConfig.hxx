@@ -51,6 +51,9 @@ public:
    asio::ip::address mTurnV6Address;
    asio::ip::address mAltStunAddress;
 
+   bool mExternalTurnAddressEnabled;
+   asio::ip::address mExternalTurnAddress;
+
    resip::Data mAuthenticationRealm;
    std::map<resip::Data,RealmUsers> mUsers;
    std::map<RealmUserPair, resip::Data> mRealmUsersAuthenticaionCredentials;

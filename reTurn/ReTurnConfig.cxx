@@ -23,6 +23,8 @@ ReTurnConfig::ReTurnConfig() :
    mTurnAddress(asio::ip::address::from_string("0.0.0.0")),
    mTurnV6Address(asio::ip::address::from_string("::0")),
    mAltStunAddress(asio::ip::address::from_string("0.0.0.0")),
+   mExternalTurnAddressEnabled(false),
+   mExternalTurnAddress(mTurnAddress),
    mAuthenticationRealm("reTurn"),
    mNonceLifetime(3600),            // 1 hour - at least 1 hours is recommended by the RFC
    mAllocationPortRangeMin(49152),  // must be even - This default range is the Dynamic and/or Private Port range - recommended by RFC
@@ -74,6 +76,12 @@ void ReTurnConfig::parseConfig(int argc, char** argv, const resip::Data& default
    mPidFile = getConfigData("PidFile", mPidFile);
    mRunAsUser = getConfigData("RunAsUser", mRunAsUser);
    mRunAsGroup = getConfigData("RunAsGroup", mRunAsGroup);
+
+   Data externalTurnAddressString = getConfigData("ExternalTurnAddress", "");
+   if (!externalTurnAddressString.empty()) {
+	   mExternalTurnAddressEnabled = true;
+	   mExternalTurnAddress = asio::ip::address::from_string(externalTurnAddressString.c_str());
+   }
 
    mAuthMethod = getConfigData("AuthMethod", mAuthMethod);
    if (mAuthMethod == "unison")

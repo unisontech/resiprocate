@@ -13,7 +13,7 @@
 #           (see AltStunAddress and AltStunPort settings), then do
 #           not leave this set to INADDR_ANY (0.0.0.0), place
 #           a valid IP address from a local NIC here.
-TurnAddress = 10.10.18.26
+TurnAddress = 0.0.0.0
 
 # Local IPv6 Address to bind base STUN/TURN transports to.
 # Note:  This is the IP Address that IPv6 clients should be configured to
@@ -51,6 +51,10 @@ AltStunAddress = 0.0.0.0
 #        sent to the TurnAddress/TurnPort.
 AltStunPort = 0
 
+# If your server is behind NAT, use this option to set extenal address
+# that will be sent on allocation requests. Note that realy port stays 
+# the same. This means that you need 1-to-1 port mapping on your NAT.
+ExternalTurnAddress = 10.10.18.26
 
 ########################################################
 # Logging settings

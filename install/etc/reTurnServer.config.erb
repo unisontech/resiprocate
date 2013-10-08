@@ -51,6 +51,10 @@ TlsTurnPort = <%= @listen_tls_port %>
 #        sent to the TurnAddress/TurnPort.
 # AltStunPort = 0
 
+# If your server is behind NAT, use this option to set extenal address
+# that will be sent on allocation requests. Note that realy port stays 
+# the same. This means that you need 1-to-1 port mapping on your NAT.
+ExternalTurnAddress = <%= @external_addr %>
 
 ########################################################
 # Logging settings
