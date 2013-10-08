@@ -21,4 +21,4 @@ autoreconf --install || error
 ./configure --with-ssl --prefix=$2 || error
 make -j5 || error
 make install || error
-
+chrpath -r \$ORIGIN/../lib $2/sbin/reTurnServer || error
