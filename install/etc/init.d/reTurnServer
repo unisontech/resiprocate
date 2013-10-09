@@ -40,10 +40,10 @@ fi
 
  
 BASE_PATH=$RUNNER_BASE_DIR
-NAME=return
+NAME=reTurnServer
 USER=$RUNNER_USER
 GROUP=$RUNNER_USER
-DAEMON=$BASE_PATH/bin/$NAME
+DAEMON=$BASE_PATH/sbin/$NAME
 DESC="resiprocate reTurn server"
 PIDFILE="$BASE_PATH/var/run/reTurnServer.pid"
 PIDFILE_DIR=`/usr/bin/dirname $PIDFILE`
