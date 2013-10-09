@@ -357,12 +357,13 @@ ConfigParse::removePath(const resip::Data& fileAndPath)
 bool 
 ConfigParse::AddBasePathIfRequired(Data& filename)
 {
-   // If filename already has a path specified, then don't touch it
+   // If filename has an absolute path, then don't touch it
    ParseBuffer pb(filename);
-   pb.skipToOneOf("/\\");
-   if(pb.eof())
+   pb.skipWhitespace();
+   if(pb.position() && pb.position()[0] != '/')
    {
-       // No slashes in filename, so no path present
+       // No leading slash, so this is a relative path
+	   // Add base path to it
        filename = mConfigBasePath + filename;
        return true;
    }

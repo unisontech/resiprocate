@@ -91,6 +91,7 @@ void ReTurnConfig::parseConfig(int argc, char** argv, const resip::Data& default
 	   {
 		   throw ConfigParse::Exception("UnisonAuth is enabled while UnisonPublicKeyPath is not set", __FILE__, __LINE__);
 	   }
+	   AddBasePathIfRequired(mUnisonPublicKeyPath);
    }
    else if (mAuthMethod == "long-term")
    {

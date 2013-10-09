@@ -67,7 +67,7 @@ LoggingType = file
 LoggingLevel = WARNING
 
 # Log Filename
-LogFilename = <%= @install_dir %>/var/log/reTurnServer.log
+LogFilename = ../var/log/reTurnServer.log
 
 # Log file Max Size
 LogFileMaxLines = 50000
@@ -82,7 +82,7 @@ Daemonize = true
 
 # On UNIX it is normal to create a PID file
 # if unspecified, no attempt will be made to create a PID file
-PidFile = <%= @install_dir %>/var/run/reTurnServer.pid
+#PidFile = ../var/run/reTurnServer.pid
 
 # UNIX account information to run process as
 RunAsUser = <%= @user %>

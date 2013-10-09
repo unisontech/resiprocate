@@ -108,7 +108,7 @@ reTurn::ReTurnServerProcess::main(int argc, char* argv[])
       if (reTurnConfig.mAuthMethod == "unison")
       {
 		  // The one and only RequestHandler - if altStunPort is non-zero, then assume RFC3489 support is enabled and pass settings to request handler
-    	  requestHandler.reset(new reTurn::UnRequestHandler(turnManager, "/home/dzhukov/unison/resiprocate/libuauth/test/id_rsa.pub.pem.example",
+    	  requestHandler.reset(new reTurn::UnRequestHandler(turnManager, reTurnConfig.mUnisonPublicKeyPath.c_str(),
 			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnAddress : 0,
 			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mTurnPort : 0,
 			 reTurnConfig.mAltStunPort != 0 ? &reTurnConfig.mAltStunAddress : 0,
