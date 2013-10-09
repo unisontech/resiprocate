@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 # asterisk      start the asterisk PBX
 # (c) Mark Purcell <msp@debian.org>
