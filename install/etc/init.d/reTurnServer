@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 #
 # asterisk      start the asterisk PBX
 # (c) Mark Purcell <msp@debian.org>
@@ -74,7 +74,7 @@ if [ "$UMASK" != '' ]; then
   umask $UMASK
 fi
 
-DAEMON_OPTS="${CONFIG_FILE} --Daemonize=true --PidFile=${PIDFILE}"
+DAEMON_OPTS="${CONFIG_FILE} --PidFile=${PIDFILE}"
 
 if [ ! -d "$PIDFILE_DIR" ]; then
   /bin/mkdir -p "$PIDFILE_DIR"
